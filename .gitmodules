@@ -1,0 +1,4 @@
+[submodule "subprojects/gflags"]
+	path = subprojects/gflags
+	url = https://github.com/gflags/gflags.git
+	branch = v2.2.2
