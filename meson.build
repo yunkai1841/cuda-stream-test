@@ -10,9 +10,6 @@ gflags_proj = cmake.subproject('gflags')
 message('CMake targets:\n - ' + '\n - '.join(gflags_proj.target_list()))
 gflags_dep = gflags_proj.dependency('gflags_static')
 
-executable(
-    'matrixmul',
-    'matrixmul.cu',
-    dependencies: cuda,
-    install: true
-)
+src_files = []
+
+subdir('src')
