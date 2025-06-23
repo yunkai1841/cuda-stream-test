@@ -1,4 +1,3 @@
-
 /**
  * Matrix multiplication using CUDA
  */
@@ -199,5 +198,16 @@ __global__ void matrixMulTilingSharedUnrollKernel(float *C, const float *A, cons
     // Write Csub to global memory
     int cIndex = N * 16 * by + 16 * bx;
     C[cIndex + N * ty + tx] = Csub;
+}
+
+/**
+ * Vector addition using CUDA
+ */
+__global__ void vectorAddKernel(float *C, const float *A, const float *B, int N)
+{
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < N) {
+        C[idx] = A[idx] + B[idx];
+    }
 }
 
