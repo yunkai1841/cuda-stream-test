@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-pip \
     sudo \
     bash-completion \
+    clang-format \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies

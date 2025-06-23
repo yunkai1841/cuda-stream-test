@@ -6,7 +6,8 @@ namespace cuda_utils {
 CudaMemory::CudaMemory(size_t size) : ptr_(nullptr), size_(size) {
     cudaError_t err = cudaMalloc(&ptr_, size);
     if (err != cudaSuccess) {
-        throw std::runtime_error("CUDA memory allocation failed: " + std::string(cudaGetErrorString(err)));
+        throw std::runtime_error("CUDA memory allocation failed: " +
+                                 std::string(cudaGetErrorString(err)));
     }
 }
 
@@ -50,7 +51,8 @@ void CudaMemory::reset(float* new_ptr, size_t new_size) {
 CudaStream::CudaStream() : stream_(nullptr) {
     cudaError_t err = cudaStreamCreate(&stream_);
     if (err != cudaSuccess) {
-        throw std::runtime_error("CUDA stream creation failed: " + std::string(cudaGetErrorString(err)));
+        throw std::runtime_error("CUDA stream creation failed: " +
+                                 std::string(cudaGetErrorString(err)));
     }
 }
 
@@ -73,8 +75,6 @@ CudaStream& CudaStream::operator=(CudaStream&& other) noexcept {
     return *this;
 }
 
-void CudaStream::synchronize() const {
-    cudaStreamSynchronize(stream_);
-}
+void CudaStream::synchronize() const { cudaStreamSynchronize(stream_); }
 
-} // namespace cuda_utils
+}  // namespace cuda_utils
