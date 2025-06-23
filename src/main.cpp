@@ -6,6 +6,7 @@
 #include <memory>
 #include <stdexcept>
 #include "matrixmul.cuh"
+#include "cuda_utils.h"
 
 // コマンドライン引数の定義
 DEFINE_int32(matrix_size, 1024, "Matrix size (N x N)");
@@ -13,113 +14,7 @@ DEFINE_int32(num_async, 4, "Number of asynchronous matrix multiplications");
 DEFINE_string(kernel_type, "basic", "Kernel type: basic, tiling, shared, unroll");
 DEFINE_bool(use_streams, true, "Use CUDA streams for asynchronous execution");
 
-// メモリ管理のためのRAIIラッパー（スマートポインタライクなクラス）
-class CudaMemory {
-public:
-    explicit CudaMemory(size_t size) : size_(size), ptr_(nullptr) {
-        cudaError_t err = cudaMalloc(&ptr_, size);
-        if (err != cudaSuccess) {
-            throw std::runtime_error("CUDA memory allocation failed: " + std::string(cudaGetErrorString(err)));
-        }
-    }
-    
-    ~CudaMemory() {
-        if (ptr_) {
-            cudaFree(ptr_);
-            ptr_ = nullptr;
-        }
-    }
-    
-    // コピーコンストラクタとコピー代入演算子を削除（unique_ptr風）
-    CudaMemory(const CudaMemory&) = delete;
-    CudaMemory& operator=(const CudaMemory&) = delete;
-    
-    // ムーブコンストラクタとムーブ代入演算子
-    CudaMemory(CudaMemory&& other) noexcept : ptr_(other.ptr_), size_(other.size_) {
-        other.ptr_ = nullptr;
-        other.size_ = 0;
-    }
-    
-    CudaMemory& operator=(CudaMemory&& other) noexcept {
-        if (this != &other) {
-            if (ptr_) cudaFree(ptr_);
-            ptr_ = other.ptr_;
-            size_ = other.size_;
-            other.ptr_ = nullptr;
-            other.size_ = 0;
-        }
-        return *this;
-    }
-    
-    float* get() const { return ptr_; }
-    size_t size() const { return size_; }
-    
-    // スマートポインタ風のoperator bool
-    explicit operator bool() const { return ptr_ != nullptr; }
-    
-    // 生ポインタの所有権を放棄
-    float* release() {
-        float* temp = ptr_;
-        ptr_ = nullptr;
-        size_ = 0;
-        return temp;
-    }
-    
-    // 新しいメモリを管理対象に設定
-    void reset(float* new_ptr = nullptr, size_t new_size = 0) {
-        if (ptr_) cudaFree(ptr_);
-        ptr_ = new_ptr;
-        size_ = new_size;
-    }
-    
-private:
-    float* ptr_;
-    size_t size_;
-};
-
-// CUDA Stream管理のためのRAIIラッパー
-class CudaStream {
-public:
-    CudaStream() : stream_(0) {
-        cudaError_t err = cudaStreamCreate(&stream_);
-        if (err != cudaSuccess) {
-            throw std::runtime_error("CUDA stream creation failed: " + std::string(cudaGetErrorString(err)));
-        }
-    }
-    
-    ~CudaStream() {
-        if (stream_) {
-            cudaStreamDestroy(stream_);
-        }
-    }
-    
-    // コピー禁止
-    CudaStream(const CudaStream&) = delete;
-    CudaStream& operator=(const CudaStream&) = delete;
-    
-    // ムーブ可能
-    CudaStream(CudaStream&& other) noexcept : stream_(other.stream_) {
-        other.stream_ = 0;
-    }
-    
-    CudaStream& operator=(CudaStream&& other) noexcept {
-        if (this != &other) {
-            if (stream_) cudaStreamDestroy(stream_);
-            stream_ = other.stream_;
-            other.stream_ = 0;
-        }
-        return *this;
-    }
-    
-    cudaStream_t get() const { return stream_; }
-    
-    void synchronize() const {
-        cudaStreamSynchronize(stream_);
-    }
-    
-private:
-    cudaStream_t stream_;
-};
+using namespace cuda_utils;
 
 // 行列の初期化
 void initializeMatrix(float* matrix, int N, float value = 1.0f) {
