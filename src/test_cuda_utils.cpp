@@ -31,8 +31,13 @@ TEST_F(CudaUtilsTest, CudaMemoryBasicAllocation) {
 }
 
 TEST_F(CudaUtilsTest, CudaMemoryZeroAllocation) {
-    // ゼロサイズの確保（エラーになるべき）
-    EXPECT_THROW(CudaMemory(0), std::runtime_error);
+    // ゼロサイズの確保（例外は投げない）
+    EXPECT_NO_THROW({
+        CudaMemory mem(0);
+        EXPECT_FALSE(mem);
+        EXPECT_EQ(mem.get(), nullptr);
+        EXPECT_EQ(mem.size(), 0);
+    });
 }
 
 TEST_F(CudaUtilsTest, CudaMemoryMoveConstructor) {
