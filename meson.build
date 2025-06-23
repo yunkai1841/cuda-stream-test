@@ -1,6 +1,6 @@
 project(
     'matrixmul',
-    'cuda',
+    'cpp', 'cuda',
 )
 
 cuda = dependency('cuda', required: true)
