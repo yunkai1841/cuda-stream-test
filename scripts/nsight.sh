@@ -2,8 +2,8 @@
 # Nsight Systems で main バイナリを全パラメータ組み合わせでプロファイルするスクリプト
 set -e
 
-# matrix_size
-sizes=( [small]=256 [medium]=512 [large]=1024 [huge]=2048 )
+# matrix_size（連想配列として宣言）
+declare -A sizes=([small]=256 [medium]=512 [large]=1024 [huge]=2048)
 # num_asyncs
 num_asyncs=(1 2 4 8)
 # kernel_type
@@ -22,7 +22,7 @@ RESULTS_DIR="$(dirname "$0")/../results"
 mkdir -p "$RESULTS_DIR"
 
 for size_name in "${!sizes[@]}"; do
-  N=${sizes[$size_name]}
+  N="${sizes[$size_name]}"
   for num_async in "${num_asyncs[@]}"; do
     for kernel_type in "${kernel_types[@]}"; do
       for use_streams in "${use_streams_opts[@]}"; do
