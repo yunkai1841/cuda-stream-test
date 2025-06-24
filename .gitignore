@@ -8,4 +8,8 @@
 builddir/
 build/
 
+# Subprojects downloaded by Meson
+subprojects/googletest-*/
+subprojects/packagecache/
+
 settings.json

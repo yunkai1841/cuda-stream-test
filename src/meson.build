@@ -1,6 +1,7 @@
 matrixmul_files = [
     'matrixmul.cu',
     'launcher.cu',
+    'cuda_utils.cpp',
 ]
 
 src_files += matrixmul_files
@@ -20,3 +21,16 @@ main_exe = executable(
     link_with: matrixmul,
     install: true,
 )
+
+# Test executable for CUDA utils
+if gtest_dep.found()
+    test_exe = executable(
+        'test_cuda_utils',
+        'test_cuda_utils.cpp',
+        dependencies: [cuda, gtest_dep],
+        link_with: matrixmul,
+        install: false,
+    )
+    
+    test('cuda_utils_test', test_exe)
+endif

@@ -1,8 +1,7 @@
 /**
  * Matrix multiplication using CUDA
  */
-__global__ void matrixMulKernel(float *C, const float *A, const float *B, int N)
-{
+__global__ void matrixMulKernel(float *C, const float *A, const float *B, int N) {
     // Block index
     int bx = blockIdx.x;
     int by = blockIdx.y;
@@ -14,14 +13,14 @@ __global__ void matrixMulKernel(float *C, const float *A, const float *B, int N)
     // Index of the first sub-matrix of A processed by the block
     int aBegin = N * 16 * by;
     // Index of the last sub-matrix of A processed by the block
-    int aEnd   = aBegin + N - 1;
+    int aEnd = aBegin + N - 1;
     // Step size used to iterate through the sub-matrices of A
-    int aStep  = 16;
+    int aStep = 16;
 
     // Index of the first sub-matrix of B processed by the block
     int bBegin = 16 * bx;
     // Step size used to iterate through the sub-matrices of B
-    int bStep  = 16 * N;
+    int bStep = 16 * N;
 
     // Csub is used to store the element of C computed by the thread
     float Csub = 0;
@@ -44,7 +43,8 @@ __global__ void matrixMulKernel(float *C, const float *A, const float *B, int N)
             Csub += As[ty][k] * Bs[k][tx];
         }
 
-        // Synchronize to make sure that the preceding computation is done before loading new data in shared memory
+        // Synchronize to make sure that the preceding computation is done before loading new data
+        // in shared memory
         __syncthreads();
     }
 
@@ -56,8 +56,7 @@ __global__ void matrixMulKernel(float *C, const float *A, const float *B, int N)
 /**
  * Matrix multiplication using tiling approach
  */
-__global__ void matrixMulTilingKernel(float *C, const float *A, const float *B, int N)
-{
+__global__ void matrixMulTilingKernel(float *C, const float *A, const float *B, int N) {
     // Block index
     int bx = blockIdx.x;
     int by = blockIdx.y;
@@ -69,14 +68,14 @@ __global__ void matrixMulTilingKernel(float *C, const float *A, const float *B, 
     // Index of the first sub-matrix of A processed by the block
     int aBegin = N * 16 * by;
     // Index of the last sub-matrix of A processed by the block
-    int aEnd   = aBegin + N - 1;
+    int aEnd = aBegin + N - 1;
     // Step size used to iterate through the sub-matrices of A
-    int aStep  = 16;
+    int aStep = 16;
 
     // Index of the first sub-matrix of B processed by the block
     int bBegin = 16 * bx;
     // Step size used to iterate through the sub-matrices of B
-    int bStep  = 16 * N;
+    int bStep = 16 * N;
 
     // Csub is used to store the element of C computed by the thread
     float Csub = 0;
@@ -95,8 +94,7 @@ __global__ void matrixMulTilingKernel(float *C, const float *A, const float *B, 
 /**
  * Matrix multiplication using tiling approach with shared memory
  */
-__global__ void matrixMulTilingSharedKernel(float *C, const float *A, const float *B, int N)
-{
+__global__ void matrixMulTilingSharedKernel(float *C, const float *A, const float *B, int N) {
     // Block index
     int bx = blockIdx.x;
     int by = blockIdx.y;
@@ -108,14 +106,14 @@ __global__ void matrixMulTilingSharedKernel(float *C, const float *A, const floa
     // Index of the first sub-matrix of A processed by the block
     int aBegin = N * 16 * by;
     // Index of the last sub-matrix of A processed by the block
-    int aEnd   = aBegin + N - 1;
+    int aEnd = aBegin + N - 1;
     // Step size used to iterate through the sub-matrices of A
-    int aStep  = 16;
+    int aStep = 16;
 
     // Index of the first sub-matrix of B processed by the block
     int bBegin = 16 * bx;
     // Step size used to iterate through the sub-matrices of B
-    int bStep  = 16 * N;
+    int bStep = 16 * N;
 
     // Csub is used to store the element of C computed by the thread
     float Csub = 0;
@@ -138,7 +136,8 @@ __global__ void matrixMulTilingSharedKernel(float *C, const float *A, const floa
             Csub += As[ty][k] * Bs[k][tx];
         }
 
-        // Synchronize to make sure that the preceding computation is done before loading new data in shared memory
+        // Synchronize to make sure that the preceding computation is done before loading new data
+        // in shared memory
         __syncthreads();
     }
 
@@ -162,14 +161,14 @@ __global__ void matrixMulTilingSharedUnrollKernel(float *C, const float *A, cons
     // Index of the first sub-matrix of A processed by the block
     int aBegin = N * 16 * by;
     // Index of the last sub-matrix of A processed by the block
-    int aEnd   = aBegin + N - 1;
+    int aEnd = aBegin + N - 1;
     // Step size used to iterate through the sub-matrices of A
-    int aStep  = 16;
+    int aStep = 16;
 
     // Index of the first sub-matrix of B processed by the block
     int bBegin = 16 * bx;
     // Step size used to iterate through the sub-matrices of B
-    int bStep  = 16 * N;
+    int bStep = 16 * N;
 
     // Csub is used to store the element of C computed by the thread
     float Csub = 0;
@@ -187,12 +186,13 @@ __global__ void matrixMulTilingSharedUnrollKernel(float *C, const float *A, cons
         // Synchronize to make sure the matrices are loaded
         __syncthreads();
 
-        // Multiply the two matrices together with unrolling
-        #pragma unroll
+// Multiply the two matrices together with unrolling
+#pragma unroll
         for (int k = 0; k < 16; ++k) {
             Csub += As[ty][k] * Bs[k][tx];
         }
-        // Synchronize to make sure that the preceding computation is done before loading new data in shared memory
+        // Synchronize to make sure that the preceding computation is done before loading new data
+        // in shared memory
         __syncthreads();
     }
     // Write Csub to global memory
@@ -203,11 +203,9 @@ __global__ void matrixMulTilingSharedUnrollKernel(float *C, const float *A, cons
 /**
  * Vector addition using CUDA
  */
-__global__ void vectorAddKernel(float *C, const float *A, const float *B, int N)
-{
+__global__ void vectorAddKernel(float *C, const float *A, const float *B, int N) {
     int idx = blockIdx.x * blockDim.x + threadIdx.x;
     if (idx < N) {
         C[idx] = A[idx] + B[idx];
     }
 }
-
