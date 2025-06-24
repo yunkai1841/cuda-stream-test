@@ -261,7 +261,7 @@ TEST_F(MatrixMulTest, VectorAddKernelBasic) {
     ASSERT_EQ(err, cudaSuccess);
     ASSERT_GT(deviceCount, 0);
     
-    std::cout << "Vector add kernel test skipped - requires launcher function" << std::endl;
+    GTEST_SKIP() << "Vector add kernel test skipped - requires launcher function";
 }
 
 // パフォーマンステスト（異なるカーネルの相対的な速度を確認）
