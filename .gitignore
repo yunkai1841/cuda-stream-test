@@ -13,3 +13,7 @@ subprojects/googletest-*/
 subprojects/packagecache/
 
 settings.json
+
+# Nsight Systems profile output
+nsys_*.nsys-rep
+*.qdrep
