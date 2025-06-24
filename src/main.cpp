@@ -6,6 +6,7 @@
 #include <memory>
 #include <stdexcept>
 #include <vector>
+#include <iomanip> // std::setprecision
 
 #include "cuda_utils.h"
 #include "matrixmul.cuh"
@@ -98,7 +99,7 @@ int main(int argc, char** argv) {
     }
 
     auto end = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    auto duration = std::chrono::duration<double, std::milli>(end - start); // double型のms
 
     // 結果をホストにコピー
     for (int i = 0; i < num_async; i++) {
@@ -124,6 +125,7 @@ int main(int argc, char** argv) {
 
     // パフォーマンス結果の表示
     std::cout << "\nPerformance Results:" << std::endl;
+    std::cout << std::fixed << std::setprecision(2); // 小数点以下2桁で表示
     std::cout << "  Total execution time: " << duration.count() << " ms" << std::endl;
     std::cout << "  Average time per operation: " << duration.count() / num_async << " ms"
               << std::endl;
