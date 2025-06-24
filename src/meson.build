@@ -33,4 +33,15 @@ if gtest_dep.found()
     )
     
     test('cuda_utils_test', test_exe)
+
+    # Test executable for matrix multiplication
+    test_matrixmul_exe = executable(
+        'test_matrixmul',
+        'test_matrixmul.cpp',
+        dependencies: [cuda, gtest_dep],
+        link_with: matrixmul,
+        install: false,
+    )
+    
+    test('matrixmul_test', test_matrixmul_exe)
 endif

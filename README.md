@@ -24,6 +24,21 @@ meson compile
 ```bash
 meson test
 ```
+
+Available test suites:
+- `cuda_utils_test`: Tests for CUDA utilities (memory management, streams)
+- `matrixmul_test`: Tests for matrix multiplication kernels including:
+  - Basic kernel correctness tests
+  - Different kernel variants (basic, tiling, shared memory, unroll)
+  - Edge cases (identity matrix, zero matrix)
+  - Performance comparison between kernels
+
+To run specific test suites:
+```bash
+meson test cuda_utils_test -v
+meson test matrixmul_test -v
+```
+
 ## run example
 
 ```bash
