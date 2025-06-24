@@ -54,41 +54,21 @@ __global__ void matrixMulKernel(float *C, const float *A, const float *B, int N)
 }
 
 /**
- * Matrix multiplication using tiling approach
+ * Matrix multiplication using tiling approach (simplified version)
  */
 __global__ void matrixMulTilingKernel(float *C, const float *A, const float *B, int N) {
-    // Block index
-    int bx = blockIdx.x;
-    int by = blockIdx.y;
+    // Calculate global row and column indices
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-    // Thread index
-    int tx = threadIdx.x;
-    int ty = threadIdx.y;
-
-    // Index of the first sub-matrix of A processed by the block
-    int aBegin = N * 16 * by;
-    // Index of the last sub-matrix of A processed by the block
-    int aEnd = aBegin + N - 1;
-    // Step size used to iterate through the sub-matrices of A
-    int aStep = 16;
-
-    // Index of the first sub-matrix of B processed by the block
-    int bBegin = 16 * bx;
-    // Step size used to iterate through the sub-matrices of B
-    int bStep = 16 * N;
-
-    // Csub is used to store the element of C computed by the thread
-    float Csub = 0;
-
-    // Loop over all the sub-matrices of A and B required to compute Csub
-    for (int a = aBegin, b = bBegin; a <= aEnd; a += aStep, b += bStep) {
-        // Load the matrices from global memory to shared memory
-        Csub += A[a + N * ty + tx] * B[b + N * ty + tx];
+    // Check bounds
+    if (row < N && col < N) {
+        float sum = 0.0f;
+        for (int k = 0; k < N; k++) {
+            sum += A[row * N + k] * B[k * N + col];
+        }
+        C[row * N + col] = sum;
     }
-
-    // Write Csub to global memory
-    int cIndex = N * 16 * by + 16 * bx;
-    C[cIndex + N * ty + tx] = Csub;
 }
 
 /**
