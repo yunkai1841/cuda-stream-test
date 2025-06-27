@@ -2,6 +2,7 @@
 #include <gflags/gflags.h>
 
 #include <chrono>
+#include <fstream>
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -16,6 +17,7 @@ DEFINE_int32(matrix_size, 1024, "Matrix size (N x N)");
 DEFINE_int32(num_async, 4, "Number of asynchronous matrix multiplications");
 DEFINE_string(kernel_type, "basic", "Kernel type: basic, tiling, shared, unroll");
 DEFINE_bool(use_streams, true, "Use CUDA streams for asynchronous execution");
+DEFINE_string(performance_report, "", "Performance report output file (empty: do not save)");
 
 using namespace cuda_utils;
 
@@ -134,6 +136,16 @@ int main(int argc, char** argv) {
     double flops = 2.0 * N * N * N * num_async;        // 各行列乗算で2*N^3 FLOPs
     double gflops = flops / (duration.count() * 1e6);  // GFLOPS
     std::cout << "  Throughput: " << gflops << " GFLOPS" << std::endl;
+
+    // パフォーマンスレポートをファイルに保存（引数が指定された場合のみ）
+    if (!FLAGS_performance_report.empty()) {
+        std::ofstream ofs(FLAGS_performance_report);
+        ofs << "Performance Results:" << std::endl;
+        ofs << std::fixed << std::setprecision(2);
+        ofs << "  Total execution time: " << duration.count() << " ms" << std::endl;
+        ofs << "  Average time per operation: " << duration.count() / num_async << " ms" << std::endl;
+        ofs << "  Throughput: " << gflops << " GFLOPS" << std::endl;
+    }
 
     // クリーンアップ（スマートポインタが自動的に行うため、手動は不要）
     // streams と d_C_array は自動的にデストラクタが呼ばれる
