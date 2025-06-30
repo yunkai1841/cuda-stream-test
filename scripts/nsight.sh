@@ -3,7 +3,13 @@
 set -e
 
 # matrix_size（連想配列として宣言）
-declare -A sizes=([small]=256 [medium]=512 [large]=1024 [huge]=2048)
+declare -A sizes=([
+  tiny0]=16 [tiny1]=32 [tiny2]=64 \
+  [small0]=128 [small1]=192 [small2]=256 \
+  [medium0]=384 [medium1]=512 [medium2]=768 \
+  [large0]=1024 [large1]=1536 [large2]=2048 \
+  [huge0]=3072 [huge1]=4096 [huge2]=8192
+)
 # num_asyncs
 num_asyncs=(1 2 4 8)
 # kernel_type
