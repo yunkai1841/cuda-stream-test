@@ -14,14 +14,15 @@ docker run --gpus all -it --rm -v $(pwd):/workspace cuda-scheduling
 ## build project
 
 ```bash
-meson setup build
-cd build
+meson setup builddir
+cd builddir
 meson compile
 ```
 
 ## run tests
 
 ```bash
+cd builddir
 meson test
 ```
 
