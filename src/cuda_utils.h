@@ -112,4 +112,27 @@ class CudaStream {
     cudaStream_t stream_;
 };
 
+/**
+ * @brief CUDAカーネル実行時間計測用タイマークラス
+ *
+ * cudaEvent_tを用いてカーネルの実行時間をミリ秒単位で計測します。
+ */
+class CudaTimer {
+   public:
+    CudaTimer();
+    ~CudaTimer();
+    CudaTimer(const CudaTimer&) = delete;
+    CudaTimer& operator=(const CudaTimer&) = delete;
+    CudaTimer(CudaTimer&&) = delete;
+    CudaTimer& operator=(CudaTimer&&) = delete;
+
+    void start();
+    void stop();
+    float elapsedMilliseconds() const;
+
+   private:
+    cudaEvent_t start_;
+    cudaEvent_t stop_;
+};
+
 }  // namespace cuda_utils

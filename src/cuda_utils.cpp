@@ -77,4 +77,30 @@ CudaStream& CudaStream::operator=(CudaStream&& other) noexcept {
 
 void CudaStream::synchronize() const { cudaStreamSynchronize(stream_); }
 
+// CudaTimer implementation
+CudaTimer::CudaTimer() : start_(nullptr), stop_(nullptr) {
+    cudaEventCreate(&start_);
+    cudaEventCreate(&stop_);
+}
+
+CudaTimer::~CudaTimer() {
+    if (start_) cudaEventDestroy(start_);
+    if (stop_) cudaEventDestroy(stop_);
+}
+
+void CudaTimer::start() {
+    cudaEventRecord(start_, 0);
+}
+
+void CudaTimer::stop() {
+    cudaEventRecord(stop_, 0);
+    cudaEventSynchronize(stop_);
+}
+
+float CudaTimer::elapsedMilliseconds() const {
+    float ms = 0.0f;
+    cudaEventElapsedTime(&ms, start_, stop_);
+    return ms;
+}
+
 }  // namespace cuda_utils
