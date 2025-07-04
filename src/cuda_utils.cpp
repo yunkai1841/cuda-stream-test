@@ -1,5 +1,9 @@
 #include "cuda_utils.h"
 
+#include <cstdlib>  // for system, setenv, getenv
+#include <iostream> // for std::cerr
+#include <cstdio>   // for popen, pclose
+
 namespace cuda_utils {
 
 // CudaMemory implementation
@@ -101,6 +105,119 @@ float CudaTimer::elapsedMilliseconds() const {
     float ms = 0.0f;
     cudaEventElapsedTime(&ms, start_, stop_);
     return ms;
+}
+
+// CudaMps implementation
+bool CudaMps::daemon_started_ = false;
+
+void CudaMps::startDaemon(int percentage) {
+    if (daemon_started_) {
+        return;  // 既に起動済み
+    }
+    
+    // CUDA_MPS_PIPE_DIRECTORY環境変数を設定
+    std::string pipe_dir = "/tmp/nvidia-mps";
+    setenv("CUDA_MPS_PIPE_DIRECTORY", pipe_dir.c_str(), 1);
+    
+    // MPSコントロールデーモンを起動
+    int result = system("nvidia-cuda-mps-control -d");
+    if (result != 0) {
+        throw std::runtime_error("Failed to start MPS control daemon");
+    }
+    
+    // GPU使用率制限を設定
+    if (percentage > 0 && percentage <= 100) {
+        std::string cmd = "echo set_default_active_thread_percentage " + 
+                         std::to_string(percentage) + " | nvidia-cuda-mps-control";
+        system(cmd.c_str());
+    }
+    
+    daemon_started_ = true;
+}
+
+void CudaMps::stopDaemon() {
+    if (!daemon_started_) {
+        return;
+    }
+    
+    // MPSデーモンを停止
+    system("echo quit | nvidia-cuda-mps-control");
+    daemon_started_ = false;
+}
+
+bool CudaMps::isEnabled() {
+    // CUDA_MPS_PIPE_DIRECTORY環境変数の存在確認
+    const char* pipe_dir = getenv("CUDA_MPS_PIPE_DIRECTORY");
+    return (pipe_dir != nullptr) && daemon_started_;
+}
+
+std::string CudaMps::getStatus() {
+    if (!daemon_started_) {
+        return "MPS daemon is not running";
+    }
+    
+    // MPSの状態を取得（簡易実装）
+    FILE* fp = popen("echo get_server_list | nvidia-cuda-mps-control 2>/dev/null", "r");
+    if (fp == nullptr) {
+        return "Unable to get MPS status";
+    }
+    
+    char buffer[256];
+    std::string result;
+    while (fgets(buffer, sizeof(buffer), fp) != nullptr) {
+        result += buffer;
+    }
+    pclose(fp);
+    
+    if (result.empty()) {
+        return "MPS daemon running (no active servers)";
+    }
+    return "MPS daemon running: " + result;
+}
+
+void CudaMps::setActiveThreadPercentage(int percentage) {
+    if (!daemon_started_) {
+        throw std::runtime_error("MPS daemon is not running");
+    }
+    
+    if (percentage < 0 || percentage > 100) {
+        throw std::runtime_error("Invalid percentage value (must be 0-100)");
+    }
+    
+    std::string cmd = "echo set_default_active_thread_percentage " + 
+                     std::to_string(percentage) + " | nvidia-cuda-mps-control";
+    int result = system(cmd.c_str());
+    if (result != 0) {
+        throw std::runtime_error("Failed to set active thread percentage");
+    }
+}
+
+// MpsExecution implementation
+MpsExecution::MpsExecution(bool enable_mps, int gpu_percentage) 
+    : mps_enabled_(enable_mps), started_daemon_(false) {
+    if (mps_enabled_) {
+        try {
+            if (!CudaMps::isEnabled()) {
+                CudaMps::startDaemon(gpu_percentage);
+                started_daemon_ = true;
+            }
+        } catch (const std::exception& e) {
+            // MPS起動に失敗した場合は警告を出してMPSなしで続行
+            std::cerr << "Warning: Failed to start MPS daemon: " << e.what() << std::endl;
+            std::cerr << "Continuing without MPS..." << std::endl;
+            mps_enabled_ = false;
+        }
+    }
+}
+
+MpsExecution::~MpsExecution() {
+    if (started_daemon_) {
+        try {
+            CudaMps::stopDaemon();
+        } catch (const std::exception& e) {
+            std::cerr << "Warning: Failed to stop MPS daemon: " << e.what() << std::endl;
+        }
+    }
 }
 
 }  // namespace cuda_utils

@@ -17,6 +17,8 @@ DEFINE_int32(matrix_size, 1024, "Matrix size (N x N)");
 DEFINE_int32(num_async, 4, "Number of asynchronous matrix multiplications");
 DEFINE_string(kernel_type, "basic", "Kernel type: basic, tiling, shared, unroll");
 DEFINE_bool(use_streams, true, "Use CUDA streams for asynchronous execution");
+DEFINE_bool(use_mps, false, "Use CUDA MPS (Multi-Process Service) for execution");
+DEFINE_int32(mps_percentage, 0, "MPS GPU usage percentage limit (0-100, 0=no limit)");
 DEFINE_string(performance_report, "", "Performance report output file (empty: do not save)");
 
 using namespace cuda_utils;
@@ -41,12 +43,31 @@ int main(int argc, char** argv) {
     const int num_async = FLAGS_num_async;
     const std::string kernel_type = FLAGS_kernel_type;
     const bool use_streams = FLAGS_use_streams;
+    const bool use_mps = FLAGS_use_mps;
+    const int mps_percentage = FLAGS_mps_percentage;
 
     std::cout << "Matrix Multiplication Configuration:" << std::endl;
     std::cout << "  Matrix size: " << N << " x " << N << std::endl;
     std::cout << "  Number of async operations: " << num_async << std::endl;
     std::cout << "  Kernel type: " << kernel_type << std::endl;
     std::cout << "  Use streams: " << (use_streams ? "Yes" : "No") << std::endl;
+    std::cout << "  Use MPS: " << (use_mps ? "Yes" : "No") << std::endl;
+    if (use_mps && mps_percentage > 0) {
+        std::cout << "  MPS GPU percentage limit: " << mps_percentage << "%" << std::endl;
+    }
+
+    // MPS実行環境の初期化
+    std::unique_ptr<MpsExecution> mps_execution;
+    if (use_mps) {
+        std::cout << "\nInitializing MPS environment..." << std::endl;
+        mps_execution = std::make_unique<MpsExecution>(true, mps_percentage);
+        if (mps_execution->isEnabled()) {
+            std::cout << "MPS daemon started successfully" << std::endl;
+            std::cout << "MPS Status: " << CudaMps::getStatus() << std::endl;
+        } else {
+            std::cout << "MPS initialization failed, continuing without MPS" << std::endl;
+        }
+    }
 
     // メモリサイズの計算
     const size_t matrix_bytes = N * N * sizeof(float);
@@ -147,6 +168,10 @@ int main(int argc, char** argv) {
     std::cout << "  Total CUDA execution time: " << total_timer.elapsedMilliseconds() << " ms" << std::endl;
     std::cout << "  Average CPU time per operation: " << duration.count() / num_async << " ms" << std::endl;
     
+    if (use_mps && mps_execution && mps_execution->isEnabled()) {
+        std::cout << "  MPS Status: " << CudaMps::getStatus() << std::endl;
+    }
+    
     // 各カーネルの実行時間を表示
     std::cout << "\nIndividual Kernel Execution Times:" << std::endl;
     float total_kernel_time = 0.0f;
@@ -168,6 +193,22 @@ int main(int argc, char** argv) {
     // パフォーマンスレポートをファイルに保存（引数が指定された場合のみ）
     if (!FLAGS_performance_report.empty()) {
         std::ofstream ofs(FLAGS_performance_report);
+        ofs << "Matrix Multiplication Performance Report" << std::endl;
+        ofs << "==========================================" << std::endl;
+        ofs << "Configuration:" << std::endl;
+        ofs << "  Matrix size: " << N << " x " << N << std::endl;
+        ofs << "  Number of async operations: " << num_async << std::endl;
+        ofs << "  Kernel type: " << kernel_type << std::endl;
+        ofs << "  Use streams: " << (use_streams ? "Yes" : "No") << std::endl;
+        ofs << "  Use MPS: " << (use_mps ? "Yes" : "No") << std::endl;
+        if (use_mps && mps_percentage > 0) {
+            ofs << "  MPS GPU percentage limit: " << mps_percentage << "%" << std::endl;
+        }
+        if (use_mps && mps_execution && mps_execution->isEnabled()) {
+            ofs << "  MPS Status: " << CudaMps::getStatus() << std::endl;
+        }
+        ofs << std::endl;
+        
         ofs << "Performance Results:" << std::endl;
         ofs << std::fixed << std::setprecision(2);
         ofs << "  Total CPU execution time: " << duration.count() << " ms" << std::endl;
@@ -185,6 +226,11 @@ int main(int argc, char** argv) {
 
     // クリーンアップ（スマートポインタが自動的に行うため、手動は不要）
     // streams と d_C_array は自動的にデストラクタが呼ばれる
+    
+    if (use_mps && mps_execution && mps_execution->isEnabled()) {
+        std::cout << "\nShutting down MPS daemon..." << std::endl;
+    }
+    // mps_execution のデストラクタが自動的にMPSデーモンを停止
 
     std::cout << "\nMatrix multiplication completed successfully!" << std::endl;
     return 0;

@@ -135,4 +135,78 @@ class CudaTimer {
     cudaEvent_t stop_;
 };
 
+/**
+ * @brief CUDA MPS (Multi-Process Service) 管理クラス
+ *
+ * MPSデーモンの起動・停止とMPS設定の管理を行います。
+ */
+class CudaMps {
+   public:
+    /**
+     * @brief MPSデーモンを起動
+     * @param percentage GPU使用率の制限（0-100、0は制限なし）
+     * @throws std::runtime_error MPSデーモンの起動に失敗した場合
+     */
+    static void startDaemon(int percentage = 0);
+
+    /**
+     * @brief MPSデーモンを停止
+     */
+    static void stopDaemon();
+
+    /**
+     * @brief MPSが有効かどうかを確認
+     * @return MPSが有効な場合true
+     */
+    static bool isEnabled();
+
+    /**
+     * @brief MPSの状態を取得
+     * @return MPS状態の文字列
+     */
+    static std::string getStatus();
+
+    /**
+     * @brief アクティブクライアント数を設定
+     * @param count 同時実行可能なクライアント数
+     */
+    static void setActiveThreadPercentage(int percentage);
+
+   private:
+    static bool daemon_started_;
+};
+
+/**
+ * @brief MPS環境での実行を管理するRAIIクラス
+ */
+class MpsExecution {
+   public:
+    /**
+     * @brief MPSを有効にして実行環境を初期化
+     * @param enable_mps MPSを有効にするかどうか
+     * @param gpu_percentage GPU使用率制限（0-100）
+     */
+    explicit MpsExecution(bool enable_mps = true, int gpu_percentage = 0);
+
+    /**
+     * @brief デストラクタ - MPSデーモンを自動停止
+     */
+    ~MpsExecution();
+
+    // コピー・ムーブ禁止
+    MpsExecution(const MpsExecution&) = delete;
+    MpsExecution& operator=(const MpsExecution&) = delete;
+    MpsExecution(MpsExecution&&) = delete;
+    MpsExecution& operator=(MpsExecution&&) = delete;
+
+    /**
+     * @brief MPSが有効かどうかを確認
+     */
+    bool isEnabled() const { return mps_enabled_; }
+
+   private:
+    bool mps_enabled_;
+    bool started_daemon_;
+};
+
 }  // namespace cuda_utils
