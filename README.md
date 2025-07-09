@@ -30,9 +30,9 @@ Available test suites:
 - `cuda_utils_test`: Tests for CUDA utilities (memory management, streams)
 - `matrixmul_test`: Tests for matrix multiplication kernels including:
   - Basic kernel correctness tests
-  - Different kernel variants (basic, tiling, shared memory, unroll)
+  - Basic kernel variant
   - Edge cases (identity matrix, zero matrix)
-  - Performance comparison between kernels
+  - Performance comparison
 
 To run specific test suites:
 ```bash

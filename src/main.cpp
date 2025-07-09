@@ -15,7 +15,7 @@
 // コマンドライン引数の定義
 DEFINE_int32(matrix_size, 1024, "Matrix size (N x N)");
 DEFINE_int32(num_async, 4, "Number of asynchronous matrix multiplications");
-DEFINE_string(kernel_type, "basic", "Kernel type: basic, tiling, shared, unroll");
+DEFINE_string(kernel_type, "basic", "Kernel type: basic");
 DEFINE_bool(use_streams, true, "Use CUDA streams for asynchronous execution");
 DEFINE_string(performance_report, "", "Performance report output file (empty: do not save)");
 

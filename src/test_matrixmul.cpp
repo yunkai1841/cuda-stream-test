@@ -125,33 +125,6 @@ TEST_F(MatrixMulTest, BasicKernelLargeMatrix) {
     testMatrixMulKernel("basic", 64);
 }
 
-// タイリングカーネルのテスト
-TEST_F(MatrixMulTest, TilingKernelSmallMatrix) {
-    testMatrixMulKernel("tiling", 16);
-}
-
-TEST_F(MatrixMulTest, TilingKernelMediumMatrix) {
-    testMatrixMulKernel("tiling", 32);
-}
-
-// 共有メモリタイリングカーネルのテスト
-TEST_F(MatrixMulTest, SharedKernelSmallMatrix) {
-    testMatrixMulKernel("shared", 16);
-}
-
-TEST_F(MatrixMulTest, SharedKernelMediumMatrix) {
-    testMatrixMulKernel("shared", 32);
-}
-
-// アンロール共有メモリカーネルのテスト
-TEST_F(MatrixMulTest, UnrollKernelSmallMatrix) {
-    testMatrixMulKernel("unroll", 16);
-}
-
-TEST_F(MatrixMulTest, UnrollKernelMediumMatrix) {
-    testMatrixMulKernel("unroll", 32);
-}
-
 // 単位行列との乗算テスト
 TEST_F(MatrixMulTest, IdentityMatrixMultiplication) {
     const int N = 32;
@@ -177,7 +150,7 @@ TEST_F(MatrixMulTest, IdentityMatrixMultiplication) {
     ASSERT_EQ(cudaMemcpy(d_I.get(), h_I.data(), size, cudaMemcpyHostToDevice), cudaSuccess);
 
     // A * I = A をテスト
-    launchMatrixMulKernel("shared", static_cast<float*>(d_C.get()), 
+    launchMatrixMulKernel("basic", static_cast<float*>(d_C.get()), 
                          static_cast<const float*>(d_A.get()), 
                          static_cast<const float*>(d_I.get()), N);
     
@@ -284,7 +257,7 @@ TEST_F(MatrixMulTest, PerformanceComparison) {
     ASSERT_EQ(cudaMemcpy(d_A.get(), h_A.data(), size, cudaMemcpyHostToDevice), cudaSuccess);
     ASSERT_EQ(cudaMemcpy(d_B.get(), h_B.data(), size, cudaMemcpyHostToDevice), cudaSuccess);
 
-    std::vector<const char*> kernels = {"basic", "tiling", "shared", "unroll"};
+    std::vector<const char*> kernels = {"basic"};
 
     for (const char* kernel_type : kernels) {
         cudaEvent_t start, stop;

@@ -13,7 +13,7 @@ declare -A sizes=([
 # num_asyncs
 num_asyncs=(1 2 4 8)
 # kernel_type
-kernel_types=(basic tiling shared unroll)
+kernel_types=(basic)
 # use_streams
 use_streams_opts=(true false)
 
