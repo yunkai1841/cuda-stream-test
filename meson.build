@@ -1,6 +1,10 @@
 project(
     'matrixmul',
     'cpp', 'cuda',
+    default_options: [
+        'cpp_std=c++17',
+        'cuda_std=c++17',
+    ]
 )
 
 cuda = dependency('cuda', required: true)
