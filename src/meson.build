@@ -27,7 +27,7 @@ if gtest_dep.found()
     test_exe = executable(
         'test_cuda_utils',
         'test_cuda_utils.cpp',
-        dependencies: [cuda, gtest_dep],
+        dependencies: [cuda, gtest_dep, gtest_main_dep],
         link_with: matrixmul,
         install: false,
     )
@@ -38,7 +38,7 @@ if gtest_dep.found()
     test_matrixmul_exe = executable(
         'test_matrixmul',
         'test_matrixmul.cpp',
-        dependencies: [cuda, gtest_dep],
+        dependencies: [cuda, gtest_dep, gtest_main_dep],
         link_with: matrixmul,
         install: false,
     )
