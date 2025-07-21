@@ -226,8 +226,7 @@ TEST_F(MatrixMulTest, InvalidKernelType) {
 TEST_F(MatrixMulTest, VectorAddKernelBasic) {
     // このテストはlauncher.cuにvectorAddのランチャー関数が追加された場合に使用
     // 現在は基本的な検証のみ実行
-    const int N = 1024;
-    
+
     // CUDAデバイスが利用可能かどうかの基本チェック
     int deviceCount;
     cudaError_t err = cudaGetDeviceCount(&deviceCount);
