@@ -9,13 +9,11 @@ project(
 
 cuda = dependency('cuda', required: true)
 
-cmake = import('cmake')
-gflags_proj = cmake.subproject('gflags')
-message('CMake targets:\n - ' + '\n - '.join(gflags_proj.target_list()))
-gflags_dep = gflags_proj.dependency('gflags_static')
+# GFlags dependency using subproject wrap
+gflags_dep = dependency('gflags', required: true, fallback: ['gflags', 'gflags_dep'])
 
-# Google Test dependency using meson wrap
-gtest_dep = dependency('gtest', required: false, fallback: ['gtest', 'gtest_main_dep'])
+# Google Test dependency using subproject wrap
+gtest_dep = dependency('gtest', required: false, fallback: ['gtest', 'gtest_dep'])
 
 src_files = []
 

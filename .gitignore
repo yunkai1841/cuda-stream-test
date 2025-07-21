@@ -10,8 +10,8 @@ build/
 results/
 
 # Subprojects downloaded by Meson
-subprojects/googletest-*/
-subprojects/packagecache/
+subprojects/*
+!subprojects/*.wrap
 
 settings.json
 
