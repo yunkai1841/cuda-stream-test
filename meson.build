@@ -9,11 +9,11 @@ project(
 
 cuda = dependency('cuda', required: true)
 
-# GFlags dependency using subproject wrap
-gflags_dep = dependency('gflags', required: true, fallback: ['gflags', 'gflags_dep'])
+# GFlags dependency using specific version 2.2.2
+gflags_dep = dependency('gflags', version: '==2.2.2', required: true, fallback: ['gflags', 'gflags_dep'])
 
-# Google Test dependency using subproject wrap
-gtest_dep = dependency('gtest', required: false, fallback: ['gtest', 'gtest_dep'])
+# Google Test dependency using specific version 1.17.0
+gtest_dep = dependency('gtest', version: '==1.17.0', required: false, fallback: ['gtest', 'gtest_dep'])
 
 src_files = []
 
