@@ -44,4 +44,15 @@ if gtest_dep.found()
     )
     
     test('matrixmul_test', test_matrixmul_exe)
+
+    # Test executable for MPS functionality
+    test_mps_exe = executable(
+        'test_mps',
+        'test_mps.cpp',
+        dependencies: [cuda, gtest_dep, gtest_main_dep],
+        link_with: matrixmul,
+        install: false,
+    )
+    
+    test('mps_test', test_mps_exe)
 endif
