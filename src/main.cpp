@@ -17,6 +17,7 @@ DEFINE_int32(matrix_size, 1024, "Matrix size (N x N)");
 DEFINE_int32(num_async, 4, "Number of asynchronous matrix multiplications");
 DEFINE_string(kernel_type, "basic", "Kernel type: basic");
 DEFINE_bool(use_streams, true, "Use CUDA streams for asynchronous execution");
+DEFINE_bool(use_mps, false, "Use CUDA Multi-Process Service (MPS) for multi-process execution");
 DEFINE_string(performance_report, "", "Performance report output file (empty: do not save)");
 
 using namespace cuda_utils;
@@ -41,12 +42,31 @@ int main(int argc, char** argv) {
     const int num_async = FLAGS_num_async;
     const std::string kernel_type = FLAGS_kernel_type;
     const bool use_streams = FLAGS_use_streams;
+    const bool use_mps = FLAGS_use_mps;
 
     std::cout << "Matrix Multiplication Configuration:" << std::endl;
     std::cout << "  Matrix size: " << N << " x " << N << std::endl;
     std::cout << "  Number of async operations: " << num_async << std::endl;
     std::cout << "  Kernel type: " << kernel_type << std::endl;
     std::cout << "  Use streams: " << (use_streams ? "Yes" : "No") << std::endl;
+    std::cout << "  Use MPS: " << (use_mps ? "Yes" : "No") << std::endl;
+
+    // MPS設定のチェックと表示
+    if (use_mps) {
+        std::cout << "\n" << CudaMPS::getStatus() << std::endl;
+        
+        if (!CudaMPS::isAvailable()) {
+            std::cerr << "Error: MPS is not supported on this device." << std::endl;
+            CudaMPS::printRecommendedSettings();
+            return 1;
+        }
+        
+        if (!CudaMPS::isRunning()) {
+            std::cout << "Warning: MPS daemon is not running." << std::endl;
+            std::cout << "For optimal multi-process execution, please start MPS daemon." << std::endl;
+            CudaMPS::printRecommendedSettings();
+        }
+    }
 
     // メモリサイズの計算
     const size_t matrix_bytes = N * N * sizeof(float);
@@ -71,10 +91,15 @@ int main(int argc, char** argv) {
 
     // CUDAストリームの作成（スマートポインタとRAII）
     std::vector<std::unique_ptr<CudaStream>> streams;
-    if (use_streams) {
+    if (use_streams || use_mps) {  // MPSモードでも専用ストリームを使用
         for (int i = 0; i < num_async; i++) {
             streams.push_back(std::make_unique<CudaStream>());
         }
+    }
+
+    // MPS使用時の追加情報表示
+    if (use_mps && CudaMPS::isRunning()) {
+        std::cout << "\n  MPS optimizations enabled for concurrent execution" << std::endl;
     }
 
     // ホストからデバイスへのデータ転送
@@ -93,7 +118,7 @@ int main(int argc, char** argv) {
 
     // 非同期でmatrix multiplicationを実行（各カーネルの時間も計測）
     for (int i = 0; i < num_async; i++) {
-        cudaStream_t stream = use_streams ? streams[i]->get() : 0;
+        cudaStream_t stream = (use_streams || use_mps) ? streams[i]->get() : 0;
         
         // 個別カーネルの実行時間測定開始
         kernel_timers[i].start();
@@ -104,7 +129,7 @@ int main(int argc, char** argv) {
     }
 
     // すべてのカーネルの完了を待機
-    if (use_streams) {
+    if (use_streams || use_mps) {
         for (int i = 0; i < num_async; i++) {
             streams[i]->synchronize();
         }
@@ -120,13 +145,13 @@ int main(int argc, char** argv) {
 
     // 結果をホストにコピー
     for (int i = 0; i < num_async; i++) {
-        cudaStream_t stream = use_streams ? streams[i]->get() : 0;
+        cudaStream_t stream = (use_streams || use_mps) ? streams[i]->get() : 0;
         cudaMemcpyAsync(h_C_results[i].data(), d_C_array[i]->get(), matrix_bytes,
                         cudaMemcpyDeviceToHost, stream);
     }
 
     // すべての転送完了を待機
-    if (use_streams) {
+    if (use_streams || use_mps) {
         for (int i = 0; i < num_async; i++) {
             streams[i]->synchronize();
         }

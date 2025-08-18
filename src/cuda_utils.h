@@ -135,4 +135,38 @@ class CudaTimer {
     cudaEvent_t stop_;
 };
 
+/**
+ * @brief CUDA Multi-Process Service (MPS) 管理クラス
+ *
+ * MPSの設定、状態確認、制御を行います。
+ */
+class CudaMPS {
+   public:
+    /**
+     * @brief MPSが利用可能かチェック
+     * @return MPSが利用可能な場合true
+     */
+    static bool isAvailable();
+
+    /**
+     * @brief MPSが現在実行中かチェック
+     * @return MPSが実行中の場合true
+     */
+    static bool isRunning();
+
+    /**
+     * @brief MPSのステータス情報を取得
+     * @return MPSのステータス文字列
+     */
+    static std::string getStatus();
+
+    /**
+     * @brief MPS設定の推奨値を表示
+     */
+    static void printRecommendedSettings();
+
+   private:
+    CudaMPS() = delete;  // ユーティリティクラスなので、インスタンス化不可
+};
+
 }  // namespace cuda_utils
