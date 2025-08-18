@@ -125,6 +125,15 @@ TEST_F(MatrixMulTest, BasicKernelLargeMatrix) {
     testMatrixMulKernel("basic", 64);
 }
 
+// 非16倍数サイズでも正しく計算できるか
+TEST_F(MatrixMulTest, BasicKernelNonMultipleTileSmall) {
+    testMatrixMulKernel("basic", 17);
+}
+
+TEST_F(MatrixMulTest, BasicKernelNonMultipleTileMedium) {
+    testMatrixMulKernel("basic", 30);
+}
+
 // 単位行列との乗算テスト
 TEST_F(MatrixMulTest, IdentityMatrixMultiplication) {
     const int N = 32;

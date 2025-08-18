@@ -1,56 +1,57 @@
 /**
- * Matrix multiplication using CUDA
+ * Matrix multiplication using CUDA (tiled, boundary-safe)
+ * C = A x B, where A, B, C are N x N row-major matrices.
+ * Tile size is 16x16. Works for any N (not only multiples of 16).
  */
 __global__ void matrixMulKernel(float *C, const float *A, const float *B, int N) {
-    // Block index
-    int bx = blockIdx.x;
-    int by = blockIdx.y;
+    constexpr int TILE = 16;
 
-    // Thread index
-    int tx = threadIdx.x;
-    int ty = threadIdx.y;
+    // Global row/col this thread computes
+    int row = blockIdx.y * TILE + threadIdx.y;
+    int col = blockIdx.x * TILE + threadIdx.x;
 
-    // Index of the first sub-matrix of A processed by the block
-    int aBegin = N * 16 * by;
-    // Index of the last sub-matrix of A processed by the block
-    int aEnd = aBegin + N - 1;
-    // Step size used to iterate through the sub-matrices of A
-    int aStep = 16;
+    // Shared tiles
+    __shared__ float As[TILE][TILE];
+    __shared__ float Bs[TILE][TILE];
 
-    // Index of the first sub-matrix of B processed by the block
-    int bBegin = 16 * bx;
-    // Step size used to iterate through the sub-matrices of B
-    int bStep = 16 * N;
+    float acc = 0.0f;
 
-    // Csub is used to store the element of C computed by the thread
-    float Csub = 0;
-    
-    // Shared memory for the sub-matrices of A and B
-    __shared__ float As[16][16];
-    __shared__ float Bs[16][16];
+    // Number of tiles along the K dimension
+    int numTiles = (N + TILE - 1) / TILE;
 
-    // Loop over all the sub-matrices of A and B required to compute Csub
-    for (int a = aBegin, b = bBegin; a <= aEnd; a += aStep, b += bStep) {
-        // Load the matrices from global memory to shared memory
-        As[ty][tx] = A[a + N * ty + tx];
-        Bs[ty][tx] = B[b + N * ty + tx];
+    for (int t = 0; t < numTiles; ++t) {
+        int aCol = t * TILE + threadIdx.x;  // k-index for A
+        int bRow = t * TILE + threadIdx.y;  // k-index for B
 
-        // Synchronize to make sure the matrices are loaded
-        __syncthreads();
-
-        // Multiply the two matrices together
-        for (int k = 0; k < 16; ++k) {
-            Csub += As[ty][k] * Bs[k][tx];
+        // Load A tile if in bounds, else 0
+        if (row < N && aCol < N) {
+            As[threadIdx.y][threadIdx.x] = A[row * N + aCol];
+        } else {
+            As[threadIdx.y][threadIdx.x] = 0.0f;
         }
 
-        // Synchronize to make sure that the preceding computation is done before loading new data
-        // in shared memory
+        // Load B tile if in bounds, else 0
+        if (bRow < N && col < N) {
+            Bs[threadIdx.y][threadIdx.x] = B[bRow * N + col];
+        } else {
+            Bs[threadIdx.y][threadIdx.x] = 0.0f;
+        }
+
+        __syncthreads();
+
+        // Multiply partial tiles
+        #pragma unroll
+        for (int k = 0; k < TILE; ++k) {
+            acc += As[threadIdx.y][k] * Bs[k][threadIdx.x];
+        }
+
         __syncthreads();
     }
 
-    // Write Csub to global memory
-    int cIndex = N * 16 * by + 16 * bx;
-    C[cIndex + N * ty + tx] = Csub;
+    // Write result if in bounds
+    if (row < N && col < N) {
+        C[row * N + col] = acc;
+    }
 }
 
 /**
