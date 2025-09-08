@@ -35,6 +35,15 @@ void launchMatrixMulKernelWrapper(const std::string& kernel_type, float* d_C, co
 }
 
 int main(int argc, char** argv) {
+
+    // --use_streams false のようなスペース区切り指定を検出し、エラー終了
+    for (int i = 1; i < argc - 1; ++i) {
+        if ((std::string(argv[i]) == "--use_streams" || std::string(argv[i]) == "-use_streams") &&
+            (std::string(argv[i+1]) == "false" || std::string(argv[i+1]) == "0" || std::string(argv[i+1]) == "true" || std::string(argv[i+1]) == "1")) {
+            std::cerr << "[ERROR] --use_streams の指定は --use_streams=false のようにイコール区切りで指定してください。" << std::endl;
+            return 1;
+        }
+    }
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
     const int N = FLAGS_matrix_size;
@@ -46,7 +55,7 @@ int main(int argc, char** argv) {
     std::cout << "  Matrix size: " << N << " x " << N << std::endl;
     std::cout << "  Number of async operations: " << num_async << std::endl;
     std::cout << "  Kernel type: " << kernel_type << std::endl;
-    std::cout << "  Use streams: " << (use_streams ? "Yes" : "No") << std::endl;
+    std::cout << "  Use streams: " << use_streams << std::endl;
 
     // メモリサイズの計算
     const size_t matrix_bytes = N * N * sizeof(float);
@@ -95,12 +104,12 @@ int main(int argc, char** argv) {
     for (int i = 0; i < num_async; i++) {
         cudaStream_t stream = use_streams ? streams[i]->get() : 0;
         
-        // 個別カーネルの実行時間測定開始
-        kernel_timers[i].start();
+    // 個別カーネルの実行時間測定開始（各ストリーム上で記録）
+    kernel_timers[i].start(stream);
         launchMatrixMulKernelWrapper(kernel_type, d_C_array[i]->get(), d_A->get(), d_B->get(), N,
                                      stream);
-        // 個別カーネルの実行時間測定終了
-        kernel_timers[i].stop();
+    // 個別カーネルの実行時間測定終了（各ストリーム上で記録）
+    kernel_timers[i].stop(stream);
     }
 
     // すべてのカーネルの完了を待機
