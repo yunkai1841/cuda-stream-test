@@ -40,6 +40,15 @@ void launchMatrixMulKernelWrapper(const std::string& kernel_type, float* d_C, co
 }
 
 int main(int argc, char** argv) {
+
+    // --use_streams false のようなスペース区切り指定を検出し、エラー終了
+    for (int i = 1; i < argc - 1; ++i) {
+        if ((std::string(argv[i]) == "--use_streams" || std::string(argv[i]) == "-use_streams") &&
+            (std::string(argv[i+1]) == "false" || std::string(argv[i+1]) == "0" || std::string(argv[i+1]) == "true" || std::string(argv[i+1]) == "1")) {
+            std::cerr << "[ERROR] --use_streams の指定は --use_streams=false のようにイコール区切りで指定してください。" << std::endl;
+            return 1;
+        }
+    }
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
     const int N = FLAGS_matrix_size;

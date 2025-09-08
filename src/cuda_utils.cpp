@@ -49,7 +49,8 @@ void CudaMemory::reset(float* new_ptr, size_t new_size) {
 
 // CudaStream implementation
 CudaStream::CudaStream() : stream_(nullptr) {
-    cudaError_t err = cudaStreamCreate(&stream_);
+    // 非ブロッキングで作成し、レガシー・デフォルトストリームとの暗黙同期を避ける
+    cudaError_t err = cudaStreamCreateWithFlags(&stream_, cudaStreamNonBlocking);
     if (err != cudaSuccess) {
         throw std::runtime_error("CUDA stream creation failed: " +
                                  std::string(cudaGetErrorString(err)));
@@ -88,16 +89,17 @@ CudaTimer::~CudaTimer() {
     if (stop_) cudaEventDestroy(stop_);
 }
 
-void CudaTimer::start() {
-    cudaEventRecord(start_, 0);
-}
+void CudaTimer::start() { cudaEventRecord(start_, 0); }
 
-void CudaTimer::stop() {
-    cudaEventRecord(stop_, 0);
-    cudaEventSynchronize(stop_);
-}
+void CudaTimer::stop() { cudaEventRecord(stop_, 0); }
+
+void CudaTimer::start(cudaStream_t stream) { cudaEventRecord(start_, stream); }
+
+void CudaTimer::stop(cudaStream_t stream) { cudaEventRecord(stop_, stream); }
 
 float CudaTimer::elapsedMilliseconds() const {
+    // 遅延同期: 計測時にのみ同期する
+    cudaEventSynchronize(stop_);
     float ms = 0.0f;
     cudaEventElapsedTime(&ms, start_, stop_);
     return ms;

@@ -126,8 +126,13 @@ class CudaTimer {
     CudaTimer(CudaTimer&&) = delete;
     CudaTimer& operator=(CudaTimer&&) = delete;
 
+    // デフォルトストリームでイベントを記録（後方互換）
     void start();
     void stop();
+
+    // 指定ストリームでイベントを記録（推奨）
+    void start(cudaStream_t stream);
+    void stop(cudaStream_t stream);
     float elapsedMilliseconds() const;
 
    private:
