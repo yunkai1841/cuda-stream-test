@@ -14,7 +14,7 @@ matrixmul = shared_library(
     install: true,
 )
 
-main_exe = executable(
+executable(
     'main',
     'main.cpp',
     dependencies: [cuda, gflags_dep],
