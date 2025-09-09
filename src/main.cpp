@@ -3,6 +3,7 @@
 
 #include <chrono>
 #include <fstream>
+#include <iomanip>  // std::setprecision
 #include <iostream>
 #include <memory>
 #include <stdexcept>
@@ -40,12 +41,14 @@ void launchMatrixMulKernelWrapper(const std::string& kernel_type, float* d_C, co
 }
 
 int main(int argc, char** argv) {
-
     // --use_streams false のようなスペース区切り指定を検出し、エラー終了
     for (int i = 1; i < argc - 1; ++i) {
         if ((std::string(argv[i]) == "--use_streams" || std::string(argv[i]) == "-use_streams") &&
-            (std::string(argv[i+1]) == "false" || std::string(argv[i+1]) == "0" || std::string(argv[i+1]) == "true" || std::string(argv[i+1]) == "1")) {
-            std::cerr << "[ERROR] --use_streams の指定は --use_streams=false のようにイコール区切りで指定してください。" << std::endl;
+            (std::string(argv[i + 1]) == "false" || std::string(argv[i + 1]) == "0" ||
+             std::string(argv[i + 1]) == "true" || std::string(argv[i + 1]) == "1")) {
+            std::cerr << "[ERROR] --use_streams の指定は --use_streams=false "
+                         "のようにイコール区切りで指定してください。"
+                      << std::endl;
             return 1;
         }
     }
@@ -136,13 +139,12 @@ int main(int argc, char** argv) {
     cudaMemcpy(d_A_s->get(), h_A_s.data(), matrix_bytes_small, cudaMemcpyHostToDevice);
     cudaMemcpy(d_B_s->get(), h_B_s.data(), matrix_bytes_small, cudaMemcpyHostToDevice);
 
-    // CUDAタイマーの作成
+    // CUDAタイマー（全体のみ）
     CudaTimer total_timer;
-    std::vector<CudaTimer> kernel_timers(num_async);
 
     // 実行時間の測定開始（CPU時間）
     auto start = std::chrono::high_resolution_clock::now();
-    
+
     // 全体のCUDA実行時間測定開始
     total_timer.start();
     int num_str = 0;
@@ -203,7 +205,7 @@ int main(int argc, char** argv) {
     } else {
         cudaDeviceSynchronize();
     }
-    
+
     // 全体のCUDA実行時間測定終了
     total_timer.stop();
 
@@ -275,7 +277,7 @@ int main(int argc, char** argv) {
 
     // パフォーマンス結果の表示
     std::cout << "\nPerformance Results:" << std::endl;
-    std::cout << std::fixed << std::setprecision(2); // 小数点以下2桁で表示
+    std::cout << std::fixed << std::setprecision(2);  // 小数点以下2桁で表示
     std::cout << "  Total CPU execution time: " << duration.count() << " ms" << std::endl;
     std::cout << "  Total CUDA execution time: " << total_timer.elapsedMilliseconds() << " ms" << std::endl;
     std::cout << "  Average CPU time per operation: " << duration.count() / num_async << " ms" << std::endl;
@@ -294,7 +296,8 @@ int main(int argc, char** argv) {
     // 計算スループットの計算（GFLOPS）
     double flops = 2.0 * N * N * N * (num_async - small_num) + 2.0 * M * M * M * (small_num) ;        // 各行列乗算で2*N^3 FLOPs
     double gflops_cpu = flops / (duration.count() * 1e6);  // CPU時間ベースのGFLOPS
-    double gflops_cuda = flops / (total_timer.elapsedMilliseconds() * 1e6);  // CUDA時間ベースのGFLOPS
+    double gflops_cuda =
+        flops / (total_timer.elapsedMilliseconds() * 1e6);  // CUDA時間ベースのGFLOPS
     std::cout << "  Throughput (CPU time): " << gflops_cpu << " GFLOPS" << std::endl;
     std::cout << "  Throughput (CUDA time): " << gflops_cuda << " GFLOPS" << std::endl;
 
